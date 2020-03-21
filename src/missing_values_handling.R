@@ -1,9 +1,11 @@
 # This r file handles the feature engineering relative to the handling of 
 # missing values in the dataset.
+DATA_SOURCE = "C:/Users/paull/Desktop/MoSEF/Scoring/scoring_R/data/hmeq.csv"
+DATA_EXPORT = "C:/Users/paull/Desktop/MoSEF/Scoring/scoring_R/data/no_na_dataset.csv"
 
 library(naniar)
 
-data = read.csv("C:/Users/paull/Desktop/MoSEF/Scoring/scoring_R/data/hmeq.csv")
+data = read.csv(DATA_SOURCE)
 head(data)
 
 # Visualizing missing values before handling
@@ -34,4 +36,7 @@ data$REASON <- as.factor(data$REASON)
 # Visualizing missing values after handling
 vis_miss(data, warn_large_data=F)
 head(data)
+
+# Exporting the altered dataset to csv file
+write.csv(data, file=DATA_EXPORT, row.names=FALSE)
 
