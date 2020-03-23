@@ -28,12 +28,20 @@ na_col(data)
 data_bad0= data[data$BAD == 0,]
 data_bad1= data[data$BAD == 1,]
 
+save_viss= function(data, name){
+  t= vis_miss(data, warn_large_data=F)
+  ggplot2::ggsave(sprintf("C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/images/viss_%s.png", name), t, width= 6, height= 4)
+}
+
 vis_miss(data_bad0, warn_large_data= F)
 na_col(data_bad0)
+save_viss(data_bad0, "bad0")
 # Only 10% of NA in DEBTINC
 
 vis_miss(data_bad1, warn_large_data=F)
 na_col(data_bad1)
+save_viss(data_bad1, "bad1")
+
 
 # Around 65% of missing values for DEBTINC
 
@@ -51,6 +59,8 @@ sum(na_row(data_new) > 0.37) # treshhold which eliminates simultaneous DEROG, DE
 data_new= data_new[-which(rowMeans(is.na(data_new)) > 0.37), ] 
 vis_miss(data_new, warn_large_data= F)
 dim(data_new)
+save_viss(data_new, "thresh")
+
 
 
 # Visualisation of missing values per BAD values into the new dataset
