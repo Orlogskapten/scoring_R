@@ -9,16 +9,17 @@ head(data)
 data$BAD= as.factor(data$BAD)
 str(data)
 
-
 # Figure size management 
 fig <- function(width, heigth){
   options(repr.plot.width= width, repr.plot.height= heigth)
 }
 
+#### QQplot function ####
 # QQPlot function
 qqploting= function(data, column_name){
   ggplot2::qplot(sample= data[, c(column_name)], data= data) +
-    ggplot2::scale_color_manual(values=c("orange"))
+    ggplot2::stat_qq_line()
+    #ggplot2::scale_color_manual(values=c("orange"))
 }
 
 # QQPlot function with BAD values consideration
@@ -27,7 +28,6 @@ qqploting_gr= function(data, column_name){
     ggplot2::scale_color_manual(values=c("darkgreen","darkred"))
 }
 
-#### QQploting ####
 qqploting(data, "LOAN")
 qqploting_gr(data, "LOAN")
 
@@ -39,4 +39,18 @@ qqploting_gr(data, "MORTDUE")
 
 qqploting(data, "YOJ")
 qqploting_gr(data, "YOJ")
+
+
+#### Log transformation of previous column qqploted ####
+data_log= data
+col= c("LOAN", "VALUE", "MORTDUE")
+data_log[, col] = log(data_log[, col])
+data_log$YOJ= log(data_log$YOJ + 1)
+
+# YOJ contain value = 0, we are going to make log(1+YOJ)
+qqploting(data_log, "LOAN")
+qqploting(data_log, "VALUE")
+qqploting(data_log, "MORTDUE")
+qqploting(data_log, "YOJ")
+
 
