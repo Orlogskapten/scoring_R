@@ -26,11 +26,11 @@ for (column in c("DEROG", "DELINQ", "NINQ", "CLNO")) {
 
 ##### Handling string-like missing values with new specific string
 data$JOB <- as.character(data$JOB)
-data[is.na(data["JOB"]), "JOB"] <- "NULL"
+data[data["JOB"] == "", "JOB"] <- "missing_value"
 data$JOB <- as.factor(data$JOB)
 
 data$REASON <- as.character(data$REASON)
-data[is.na(data["REASON"]), "REASON"] <- "NULL"
+data[data["REASON"] == "", "REASON"] <- "missing_value"
 data$REASON <- as.factor(data$REASON)
 
 # Visualizing missing values after handling
