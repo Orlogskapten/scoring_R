@@ -25,7 +25,14 @@ for(value in unique(data$JOB)){
   data[data["JOB"] == value, new_column_name] <- 1
 }
 data$JOB <- NULL
-head(data)
+
+##### Feature Scaling for the numerical columns #####
+for(column in c("LOAN", "MORTDUE", "VALUE", "YOJ", "CLAGE", "CLNO", "DEBTINC")){
+  column_mean <- colMeans(data[column])
+  column_std <- sd(as.double(data[[column]]))
+  data[column] <- (data[column] - column_mean) / column_std
+}
 
 # Export the preprocessed dataset
+head(data)
 write.csv(data, file=DATA_EXPORT, row.names=FALSE)
