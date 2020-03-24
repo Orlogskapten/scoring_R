@@ -1,8 +1,8 @@
 # This r file handles the preprocessing of the dataset.
 # How to take raw data and convert these to data exploitable by the model?
 rm(list = ls()) # clean env
-DATA_SOURCE = "C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/data/no_na_dataset.csv"
-DATA_EXPORT = "C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/data/preprocessed_dataset.csv"
+DATA_SOURCE = "C:/Users/paull/Desktop/MoSEF/Scoring/scoring_R/data/no_na_dataset.csv"
+DATA_EXPORT = "C:/Users/paull/Desktop/MoSEF/Scoring/scoring_R/data/preprocessed_dataset.csv"
 
 # Data import
 data <- read.csv(DATA_SOURCE)
@@ -18,7 +18,7 @@ for(value in unique(data$REASON)){
 }
 data$REASON <- NULL
 
-# Debtcon
+# JOB
 for(value in unique(data$JOB)){
   new_column_name <- paste("JOB", value, sep="_")
   data[new_column_name] <- 0
