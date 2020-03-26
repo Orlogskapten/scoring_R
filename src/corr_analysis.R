@@ -2,7 +2,7 @@
 rm(list = ls()) # clean env
 DATA_SOURCE = "C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/data/no_na_dataset.csv"
 
-install.packages("ggcorrplot")
+#install.packages("ggcorrplot")
 library(ggcorrplot)
 library(dplyr)
 
@@ -54,20 +54,37 @@ ggplot2::ggsave("C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring
 
 ##### ANOVA
 num_data= data[,-c(5, 6)]
-# ARRIVER A GORGONNDER LES MODALITE DE BAD 00000...111111
+num_data= num_data[order(num_data$BAD), ]
 num_data$BAD= as.factor(num_data$BAD)
-num_data$BAD= ordered(num_data$BAD, levels= c(1, 0))
 
 head(num_data)
+tail(num_data)
 
-g= group_by(num_data, BAD) %>%
-  summarise(
-    count = n(),
-    mean = mean(num_data$LOAN, na.rm = TRUE),
-    sd = sd(num_data$LOAN, na.rm = TRUE)
-  )
-g
+boxplot_anova= function(data, variable){
+  m_1= mean(data[(data$BAD==1), c(variable)])
+  m_0= mean(data[(data$BAD==0), c(variable)])
+  
+  data$BAD= as.factor(data$BAD)
+  # Extract p_value from summary "dataframe"
+  p= summary(aov(data[, c(variable)] ~ BAD, data= data))[[1]][["Pr(>F)"]][1]
+  if (p<0.05){res= paste("Toutes les moyennes de", variable, "sont différentes")
+  } else {res= paste("Toutes les moyennes de", variable
+  , "sont égales")}
+  
+  g= ggplot2::ggplot(data, ggplot2::aes(x= BAD, y= data[, c(variable)], fill= BAD)) +
+    geom_boxplot() +
+    ggplot2::scale_fill_manual(values=c("darkgreen","darkred")) +
+    ggplot2::geom_segment(x=1, y=m_0, xend=2, yend=m_1, size= 1.5, color= "red") +
+    ggplot2::labs(y= variable, title= res)
+}
 
-mean(data[(data$BAD=1), c("LOAN")], na.rm= T)
+loan= boxplot_anova(data, "LOAN")
+mort= boxplot_anova(data, "MORTDUE")
+value= boxplot_anova(data, "VALUE")
+yoj= boxplot_anova(data, "YOJ")
+clage= boxplot_anova(data, "CLAGE")
+clno= boxplot_anova(data, "CLNO")
+debt= boxplot_anova(data, "DEBTINC")
 
+print(debt)
 
