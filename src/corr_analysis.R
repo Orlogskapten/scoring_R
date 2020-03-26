@@ -5,6 +5,7 @@ DATA_SOURCE = "C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R
 #install.packages("ggcorrplot")
 library(ggcorrplot)
 library(dplyr)
+library(gridExtra)
 
 
 # Data import
@@ -67,9 +68,13 @@ boxplot_anova= function(data, variable){
   data$BAD= as.factor(data$BAD)
   # Extract p_value from summary "dataframe"
   p= summary(aov(data[, c(variable)] ~ BAD, data= data))[[1]][["Pr(>F)"]][1]
-  if (p<0.05){res= paste("Toutes les moyennes de", variable, "sont différentes")
-  } else {res= paste("Toutes les moyennes de", variable
-  , "sont égales")}
+  if (p<0.05){res= paste("Toutes les moyennes
+  de", variable, "
+  sont différentes")
+  } else {res= paste("Toutes les moyennes
+  de", variable
+  , "
+  sont égales")}
   
   g= ggplot2::ggplot(data, ggplot2::aes(x= BAD, y= data[, c(variable)], fill= BAD)) +
     geom_boxplot() +
@@ -77,6 +82,9 @@ boxplot_anova= function(data, variable){
     ggplot2::geom_segment(x=1, y=m_0, xend=2, yend=m_1, size= 1.5, color= "red") +
     ggplot2::labs(y= variable, title= res)
 }
+
+# test
+summary(aov(data[, c("CLNO")] ~ BAD, data= data))[[1]][["Pr(>F)"]][1]
 
 loan= boxplot_anova(data, "LOAN")
 mort= boxplot_anova(data, "MORTDUE")
@@ -87,4 +95,14 @@ clno= boxplot_anova(data, "CLNO")
 debt= boxplot_anova(data, "DEBTINC")
 
 print(debt)
+
+##### Assembling those plots
+g= arrangeGrob(loan, mort, value
+              , yoj, clage, clno
+              , debt
+              , nrow= 3, ncol= 3
+)
+
+ggplot2::ggsave("C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/images/anova_plot.png", g, width= 8, height= 6.5)
+
 
