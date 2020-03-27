@@ -9,23 +9,6 @@ data <- read.csv(DATA_SOURCE)
 head(data)
 
 
-##### One Hot Encoding the two factors variables #####
-# REASON
-for(value in unique(data$REASON)){
-  new_column_name <- paste("REASON", value, sep="_")
-  data[new_column_name] <- 0
-  data[data["REASON"] == value, new_column_name] <- 1
-}
-data$REASON <- NULL
-
-# JOB
-for(value in unique(data$JOB)){
-  new_column_name <- paste("JOB", value, sep="_")
-  data[new_column_name] <- 0
-  data[data["JOB"] == value, new_column_name] <- 1
-}
-data$JOB <- NULL
-
 ##### Log transformation for LOAN, VALUE and MORTDUE
 for (col in c("LOAN", "VALUE", "MORTDUE")){
   data[, c(col)]= log(1 + data[, c(col)])
