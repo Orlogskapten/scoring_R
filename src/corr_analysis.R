@@ -2,10 +2,11 @@
 rm(list = ls()) # clean env
 DATA_SOURCE = "C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/data/no_na_dataset.csv"
 
-#install.packages("ggcorrplot")
+#install.packages("car")
 library(ggcorrplot)
 library(dplyr)
 library(gridExtra)
+library(car)
 
 
 # Data import
@@ -105,4 +106,10 @@ g= arrangeGrob(loan, mort, value
 
 ggplot2::ggsave("C:/Users/Wenceslas/Desktop/R/R_project/scoring/projecto/scoring_R/images/anova_plot.png", g, width= 8, height= 6.5)
 
+
+##### Multicolinearity analysis
+reg= glm(BAD~ ., data= data, family= binomial(link='logit'))
+print(summary(reg))
+
+print(vif(reg))
 
