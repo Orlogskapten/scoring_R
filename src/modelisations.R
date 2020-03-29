@@ -24,18 +24,33 @@ probit_AIC <- glm(BAD ~ .,  family = binomial(link = "probit"), data=train_AIC)
 logit_BIC <- glm(BAD ~ ., family = binomial(link= "logit"), data=train_BIC)
 probit_BIC <- glm(BAD ~ .,  family = binomial(link = "probit"), data=train_BIC)
 
-summary(logit)
-summary(probit)
+# Did models converge ?
+logit_AIC$converged
+probit_AIC$converged
+logit_BIC$converged
+probit_BIC$converged
 
+summary(logit_AIC)
+summary(probit_AIC)
+summary(logit_BIC)
+summary(probit_BIC)
 
+## Deviance Test
+p_value_log_AIC = 1-pchisq(logit_AIC$deviance,logit_AIC$df.resid)
+p_value_prob_AIC = 1-pchisq(probit_AIC$deviance,probit_AIC$df.resid)
+p_value_log_BIC = 1-pchisq(logit_BIC$deviance,logit_BIC$df.resid)
+p_value_prob_BIC = 1-pchisq(probit_BIC$deviance,probit_BIC$df.resid)
+
+# Metrics matrix 
 data.frame(
   Feature_selected = c("AIC","AIC","BIC","BIC"),
   Model = c("Logit","Probit","Logit","Probit"),
   AIC = c(AIC(logit_AIC),AIC(probit_AIC),AIC(logit_BIC),AIC(probit_BIC)),
-  BIC = c(BIC(logit_AIC),BIC(probit_AIC),BIC(logit_BIC),BIC(probit_BIC))
+  BIC = c(BIC(logit_AIC),BIC(probit_AIC),BIC(logit_BIC),BIC(probit_BIC)),
+  test_dev =c(p_value_log_AIC,p_value_prob_AIC,p_value_log_BIC,p_value_prob_BIC)
   )
 
-### On voit ici que le modèle Logit est un peu plus efficace que le modèle Probit.
+### Logit models seem to be more efficient than Probit.
 
 ###################################################
 #                                                 #
@@ -43,7 +58,7 @@ data.frame(
 #                                                 #
 ###################################################
 
-# Prediction des modèles 
+# Models predictions  
 
 predictions_log <- logit_AIC %>% predict(test_AIC,type="response")
 predictions_prob <- probit_AIC %>% predict(test_AIC,type="response")
@@ -52,9 +67,9 @@ predictions_prob <- probit_AIC %>% predict(test_AIC,type="response")
 
 roc(test_AIC$BAD,predictions_log,plot=TRUE,col="blue",print.auc=TRUE)
 roc(test_AIC$BAD,predictions_prob,plot=TRUE,add=TRUE,col="red",print.auc=TRUE,print.auc.y = .4)
-legend("bottomright", legend=c("logit","probit"), col=c("blue","red"),lty=1,lwd=2)
+legend("bottomright", legend=c("logit","probit"), col=c("blue","red"),lty=1,lwd=2,title = "Courbe ROC des modélisations sur le test set AIC")
 
-# Comment est construite la courbe ROC ?
+# How to build a ROC curve ?
 
 computing_metrics <- function(df,pred) {
   threshold_list <- seq(0.01,0.9,by=0.01)
@@ -82,14 +97,17 @@ computing_metrics <- function(df,pred) {
 }
 
 metrics_log_AIC <- computing_metrics(test_AIC,predictions_log)
-metrics_prob_AIC <- computing_metrics(test_AIC,predictions_prob)
+metrics_prob_AIC <- computing_metrics(test_AIC,predictions_prob) # This function compute essentials metrics 
 
-
+# we're looking for the location row of the best F1 of each model
 pos_max_log <- which.max(metrics_log_AIC$F1)
-pos_max_prob <- which.max(metrics_prob_AIC$F1)
+pos_max_prob <- which.max(metrics_prob_AIC$F1) 
+
 ### Best Threshold seuil
 print(metrics_log_AIC[pos_max_log,"threshold"])
 print(metrics_prob_AIC[pos_max_prob,"threshold"])
+
+# We are plottting metrics for each models 
 
 ggplot(metrics_log_AIC, aes(metrics_log_AIC$threshold)) +                    # basic graphical object
   geom_line(aes(y=metrics_log_AIC$sensitivity), colour="red") +  # first layer
@@ -112,35 +130,36 @@ ggplot(metrics_prob_AIC, aes(metrics_prob_AIC$threshold)) +
   scale_colour_manual(breaks=c("Sensitivity", "Precision","Specificity","F1"),values=c("red","blue","darkgreen","purple"))
 
 
-#Courbe roc à la main 
+# Handbuild roc curve
 plot(x=1-metrics_log_AIC$specificity,y=metrics_log_AIC$sensitivity)
 plot(x=1-metrics_prob_AIC$specificity,y=metrics_prob_AIC$sensitivity)
 
-# Choisissons le seuil qui nous semblait qui offre la meilleur AUC et qui est en même temps le point d'intersection entre 
-# la spécification et la sensitivité.
-
+# Classifiying with the best threshold
 test_AIC$predictions_log_f <-ifelse(predictions_log > metrics_log_AIC[pos_max_log,"threshold"], 1, 0)
 test_AIC$predictions_prob_f <-ifelse(predictions_prob > metrics_prob_AIC[pos_max_prob,"threshold"], 1, 0)
 
+# Computing confusion Matrix
 Conf_mat_log_AIC <- confusionMatrix(table(test_AIC$predictions_log_f,test_AIC$BAD))[2]
 Conf_mat_prob_AIC <-confusionMatrix(table(test_AIC$predictions_prob_f,test_AIC$BAD))[2]
+Conf_mat_log_AIC
 
 # Features Importances 
 
 a<-data.frame(varImp(logit_AIC, scale = False))
-hist(a[,1])
+a$Features <- rownames(a)
+rownames(a) <- 1:nrow(a)
+a
 b<- data.frame(varImp(probit_AIC, scale = False))
-hist(b[,1])
+b$Features <- rownames(b)
+rownames(b) <- 1:nrow(b)
+b
 
-
-# Etude des résidus du modèle.
-residus <- residuals(logit,type="partial")
-plot(train$DELINQ,residus[,"DELINQ"],cex=0.5)
-est <- loess(residus[,"DELINQ"] ~ train$DELINQ)
-ordre <- order(train$DELINQ)
-matlines(train$DELINQ[ordre],predict(est)[ordre])
-abline(lsfit(train$DELINQ,residus[,"DELINQ"]),lty=2)
-
+ggplot(a, aes(x = Features, y = Overall)) +
+  geom_bar(stat="identity")+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(b, aes(x = Features, y = Overall)) +
+  geom_bar(stat="identity")+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ###################################################
 #                                                 #
@@ -157,45 +176,20 @@ predictions_prob <- probit_BIC %>% predict(test_BIC,type="response")
 
 roc(test_BIC$BAD,predictions_log,plot=TRUE,col="blue",print.auc=TRUE)
 roc(test_BIC$BAD,predictions_prob,plot=TRUE,add=TRUE,col="red",print.auc=TRUE,print.auc.y = .4)
-legend("bottomright", legend=c("logit","probit"), col=c("blue","red"),lty=1,lwd=2)
+legend("bottomright", legend=c("logit","probit"), col=c("blue","red"),lty=1,lwd=2,title = "Courbe ROC des modélisations sur le test set BIC")
 
-# Comment est construite la courbe ROC ?
-
-computing_metrics <- function(df,pred) {
-  threshold_list <- seq(0.01,0.9,by=0.01)
-  thre<-c()
-  sensit<-c()
-  specif<-c()
-  preci <- c()
-  for (threshold in threshold_list){
-    predict = ifelse(pred > threshold, 1, 0)
-    pre = precision(table(predict, df$BAD))
-    sens = sensitivity(table(predict, df$BAD))
-    spe = specificity(table(predict, df$BAD))
-    thre <- c(thre,threshold)
-    sensit <- c(sensit,sens)
-    specif <- c(specif,spe)
-    preci <- c(preci,pre)
-  }
-  temp <-data.frame(threshold =thre,
-                    sensitivity = sensit,
-                    specificity = specif,
-                    precision = preci)
-  temp$F1 <- 2 * (temp$precision * temp$sensitivity)/(temp$precision + temp$sensitivity)
-  
-  return(temp)
-}
-
+# Using another time metrics function to compute them on the BIC dataset
 metrics_log_BIC <- computing_metrics(test_BIC,predictions_log)
 metrics_prob_BIC <- computing_metrics(test_BIC,predictions_prob)
 
-
+# Location of the best threshold
 pos_max_log <- which.max(metrics_log_BIC$F1)
 pos_max_prob <- which.max(metrics_prob_BIC$F1)
 ### Best Threshold seuil
 print(metrics_log_BIC[pos_max_log,"threshold"])
 print(metrics_prob_BIC[pos_max_prob,"threshold"])
 
+# Plotting metrics 
 ggplot(metrics_log_BIC, aes(metrics_log_BIC$threshold)) +                    # basic graphical object
   geom_line(aes(y=metrics_log_BIC$sensitivity), colour="red") +  # first layer
   geom_line(aes(y=metrics_log_BIC$precision), colour="blue")+
@@ -217,40 +211,41 @@ ggplot(metrics_prob_BIC, aes(metrics_prob_BIC$threshold)) +
   scale_colour_manual(breaks=c("Sensitivity", "Precision","Specificity","F1"),values=c("red","blue","darkgreen","purple"))
 
 
-#Courbe roc à la main 
+# Handbuild roc curve
+
 plot(x=1-metrics_log_BIC$specificity,y=metrics_log_BIC$sensitivity,type="l",col="darkgreen")
 par(new=TRUE)
 plot(x=1-metrics_prob_BIC$specificity,y=metrics_prob_BIC$sensitivity,type="l",col="darkorange")
 
-# Choisissons le seuil qui nous semblait qui offre la meilleur AUC et qui est en même temps le point d'intersection entre 
-# la spécification et la sensitivité.
-
+# Classifiying with the best threshold
 test_BIC$predictions_log_f <-ifelse(predictions_log > metrics_log_BIC[pos_max_log,"threshold"], 1, 0)
 test_BIC$predictions_prob_f <-ifelse(predictions_prob > metrics_prob_BIC[pos_max_prob,"threshold"], 1, 0)
 
+# Confusion matrix 
 Conf_mat_log_BIC <- confusionMatrix(table(test_BIC$predictions_log_f,test_BIC$BAD))[2]
+Conf_mat_log_BIC
 Conf_mat_prob_BIC <-confusionMatrix(table(test_BIC$predictions_prob_f,test_BIC$BAD))[2]
 
 # Features Importances 
 
 a<-data.frame(varImp(logit_BIC, scale = False))
-hist(a[,1])
+a$Features <- rownames(a)
+rownames(a) <- 1:nrow(a)
+a
 b<- data.frame(varImp(probit_BIC, scale = False))
-hist(b[,1])
+b$Features <- rownames(b)
+rownames(b) <- 1:nrow(b)
+b
 
+ggplot(a, aes(x = Features, y = Overall)) +
+  geom_bar(stat="identity")+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(b, aes(x = Features, y = Overall)) +
+  geom_bar(stat="identity")+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ###################################################
 #                                                 #
-#                   Annexe                        #
+#                      Fin                        #
 #                                                 #
 ###################################################
-
-#Courbe ROC à la mano
-plot(x=1-metrics_log_AIC$specificity,y=metrics_log_AIC$sensitivity,type="l",col="red")+
-par(new=TRUE)
-plot(x=1-metrics_prob_AIC$specificity,y=metrics_prob_AIC$sensitivity,type="l",col="blue")+
-par(new=TRUE)
-plot(x=1-metrics_log_BIC$specificity,y=metrics_log_BIC$sensitivity,type="l",col="darkgreen")
-par(new=TRUE)
-plot(x=1-metrics_prob_BIC$specificity,y=metrics_prob_BIC$sensitivity,type="l",col="darkorange")
-
