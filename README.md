@@ -1,1 +1,1 @@
-# scoring_R
+# Credit scoring
